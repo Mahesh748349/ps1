@@ -9,9 +9,9 @@
 
 #### Describe your approach here. Keep it short and clear.
 
-    - [How does your system efficiently extract and store features (e.g., fingerprints, spectrograms) from the audio dataset?]
-    - [What matching algorithm or technique do you use to compare noisy/partial query snippets against the database?]
-    - [How does your architecture handle scalability to support a few thousand songs and concurrent queries?]
-    - [What mechanisms are in place to ensure low latency and high accuracy despite noise or distortion in the input queries?]
+    - The system loads song metadata from CSV/JSON/Markdown/folders into typed records, decodes WAV audio, and links every generated fingerprint back to the song_id.
+    - A baseline FeatureExtractor creates compact hash/time-offset fingerprints from coarse waveform energy and zero-crossing features; the extractor is abstract so spectrogram or neural embeddings can be swapped in later.
+    - Fingerprints are stored in an in-memory inverted index: hash -> [(song_id, offset)]. Query matching uses fast hash lookup plus offset voting to identify partial clips without brute-forcing every song.
+    - The HTTP API uses Python's ThreadingHTTPServer with an immutable read-only index after startup, supports concurrent queries, reports health, rejects invalid/silent/short inputs, and returns confidence plus latency metrics.
 
 **Note:** Please do not change the format or spelling of anything in this README. The fields are extracted using a script, so any changes to the structure or formatting may break the extraction process.

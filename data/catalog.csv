@@ -1,0 +1,5 @@
+song_id,title,artist,duration_seconds,genre,audio_path
+demo_low,Demo Low Tone,Local Demo,6,demo,data/demo_wav/demo_low.wav
+demo_mid,Demo Mid Tone,Local Demo,6,demo,data/demo_wav/demo_mid.wav
+demo_high,Demo High Tone,Local Demo,6,demo,data/demo_wav/demo_high.wav
+bak,BAK,Unknown Artist,8.33,unknown,data\songs\bak.wav
