@@ -73,6 +73,24 @@ Important data note: `data/songs/song1.wav` is currently a 0-byte file, so it is
 - Python 3.11 or newer.
 - No runtime third-party packages are required for the main app.
 - Optional: install `pytest` if you want to run the test suite.
+- Audio files must be valid PCM `.wav` files. MP3, M4A, FLAC, empty files, and corrupt WAV files are rejected.
+
+## Quick Start
+
+Run these commands from PowerShell:
+
+```powershell
+cd "c:\Users\ml907\OneDrive\Desktop\audio on code 2 force\ps1"
+python -m audioid --dataset data/catalog.csv health
+python -m audioid --dataset data/catalog.csv identify data/queries/bak_query.wav
+python -m audioid --dataset data/catalog.csv serve --host 127.0.0.1 --port 8010
+```
+
+After the server starts, keep that terminal open and visit:
+
+```text
+http://127.0.0.1:8010/
+```
 
 ## Run The App
 
@@ -94,6 +112,8 @@ If port `8010` is busy, choose another port:
 ```powershell
 python -m audioid --dataset data/catalog.csv serve --host 127.0.0.1 --port 8020
 ```
+
+The server runs in the foreground. Stop it with `Ctrl+C`.
 
 ## Browser UI
 
@@ -130,6 +150,12 @@ Import a valid PCM WAV into `data/songs` and update `data/catalog.csv`:
 
 ```powershell
 python -m audioid import-song "C:\path\to\song.wav" --song-id song1 --title "Song 1" --artist "Unknown Artist" --genre unknown --replace
+```
+
+If your source song is not a WAV file, convert it to PCM WAV first. Example with FFmpeg:
+
+```powershell
+ffmpeg -i "C:\path\to\song.mp3" -ac 1 -ar 44100 "C:\path\to\song.wav"
 ```
 
 Evaluate a batch manifest:
@@ -242,6 +268,44 @@ Observed behavior:
 - `data/songs/song1.wav` is rejected cleanly because it is an empty or corrupt WAV file.
 
 The Python environment used during this update did not have `pytest` installed, so `python -m pytest` could not be run until the optional test dependency is installed.
+
+## Run Tests
+
+The app itself has no third-party runtime dependencies, but tests need `pytest`:
+
+```powershell
+python -m pip install pytest
+python -m pytest
+```
+
+If package installation is not allowed in your environment, use the CLI validation commands above to verify the main workflow.
+
+## Troubleshooting
+
+If the UI does not open:
+
+- Make sure the `serve` command is still running.
+- Try a different port, for example `--port 8020`.
+- Open the exact URL printed by the server.
+- Check that you started the command from the `ps1` project folder.
+
+If a song or query is rejected:
+
+- Confirm the file is not 0 bytes.
+- Confirm the file extension is `.wav`.
+- Confirm it is a valid PCM WAV file, not an MP3 renamed to `.wav`.
+- Confirm the query is at least 1 second long and not silent.
+
+If matching returns `unknown`:
+
+- Use a query clip cut from a song already listed in `data/catalog.csv`.
+- Use a 3-10 second query for better results.
+- Re-run `health` and confirm `songs_indexed` is greater than 0.
+
+If `song1.wav` does not work:
+
+- Replace `data/songs/song1.wav` with a real WAV file.
+- Or import a real song with `python -m audioid import-song ... --replace`.
 
 ## Recent Fixes
 
