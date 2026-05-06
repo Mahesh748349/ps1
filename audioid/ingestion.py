@@ -122,11 +122,12 @@ class DatasetCatalog:
             if audio_file.suffix.lower() not in SUPPORTED_AUDIO_EXTENSIONS:
                 continue
             song_id = audio_file.stem
+            audio_path = audio_file.relative_to(path)
             yield {
                 "song_id": song_id,
                 "title": audio_file.stem.replace("_", " ").title(),
                 "artist": "unknown",
                 "duration": "0",
                 "genre": "unknown",
-                "audio_path": str(audio_file),
+                "audio_path": str(audio_path),
             }

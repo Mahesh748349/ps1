@@ -22,6 +22,9 @@ def run_server(service: AudioIdentificationService, host: str, port: int) -> Non
             if parsed.path == "/songs":
                 self._json(200, {"songs": [_song_to_dict(song) for song in service.catalog.songs.values()]})
                 return
+            if parsed.path == "/queries":
+                self._json(200, {"queries": _query_files()})
+                return
             if parsed.path == "/identify":
                 query = parse_qs(parsed.query)
                 file_value = query.get("file", [""])[0]
@@ -56,7 +59,11 @@ def run_server(service: AudioIdentificationService, host: str, port: int) -> Non
                 self._json(404, {"message": "not found"})
                 return
             length = int(self.headers.get("Content-Length", "0"))
-            payload = json.loads(self.rfile.read(length) or b"{}")
+            try:
+                payload = json.loads(self.rfile.read(length) or b"{}")
+            except json.JSONDecodeError:
+                self._json(400, {"status": "rejected", "message": "invalid JSON request body"})
+                return
             file_value = payload.get("file")
             if not file_value:
                 self._json(400, {"status": "rejected", "message": "missing JSON field: file"})
@@ -98,6 +105,17 @@ def _song_to_dict(song: object) -> dict:
         "genre": song.genre,
         "audio_path": str(song.audio_path) if song.audio_path else "",
     }
+
+
+def _query_files() -> list[dict[str, str]]:
+    roots = [Path("data/queries"), Path("data/demo_wav")]
+    files: list[dict[str, str]] = []
+    for root in roots:
+        if not root.exists():
+            continue
+        for path in sorted(root.rglob("*.wav")):
+            files.append({"name": path.stem.replace("_", " ").title(), "path": str(path)})
+    return files
 
 
 def _index_html() -> str:
@@ -152,6 +170,12 @@ def _index_html() -> str:
     h2 { margin: 0 0 14px; font-size: 18px; letter-spacing: 0; }
     label { display: block; margin-bottom: 8px; color: var(--muted); font-size: 14px; }
     .row { display: flex; gap: 10px; align-items: end; }
+    .query-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0 2px;
+    }
     input {
       width: 100%;
       min-height: 42px;
@@ -172,6 +196,14 @@ def _index_html() -> str:
       white-space: nowrap;
     }
     button.secondary { background: #475467; }
+    button.chip {
+      min-height: 34px;
+      background: #eef2f4;
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0 10px;
+      font-size: 13px;
+    }
     .status {
       display: inline-flex;
       align-items: center;
@@ -256,6 +288,7 @@ def _index_html() -> str:
         <button id="identify">Identify</button>
         <button id="refresh" class="secondary">Refresh</button>
       </div>
+      <div id="queries" class="query-list"></div>
       <label for="upload" style="margin-top: 16px;">Upload WAV query</label>
       <div class="row">
         <input id="upload" type="file" accept=".wav,audio/wav">
@@ -279,6 +312,7 @@ def _index_html() -> str:
   <script>
     const statusEl = document.getElementById("status");
     const songsEl = document.getElementById("songs");
+    const queriesEl = document.getElementById("queries");
     const resultEl = document.getElementById("result");
     const fileEl = document.getElementById("file");
     const uploadEl = document.getElementById("upload");
@@ -304,6 +338,20 @@ def _index_html() -> str:
         </tr>
       `).join("");
       songsEl.innerHTML = `<table><thead><tr><th>Song</th><th>Genre</th><th>Path</th></tr></thead><tbody>${rows}</tbody></table>`;
+    }
+
+    async function loadQueries() {
+      const response = await fetch("/queries");
+      const payload = await response.json();
+      queriesEl.innerHTML = payload.queries.map(query => `
+        <button class="chip" type="button" data-path="${escapeHtml(query.path)}">${escapeHtml(query.name)}</button>
+      `).join("");
+      queriesEl.querySelectorAll("button").forEach(button => {
+        button.addEventListener("click", () => {
+          fileEl.value = button.dataset.path;
+          identify();
+        });
+      });
     }
 
     async function identify() {
@@ -373,9 +421,11 @@ def _index_html() -> str:
     document.getElementById("refresh").addEventListener("click", () => {
       loadHealth();
       loadSongs();
+      loadQueries();
     });
     loadHealth();
     loadSongs();
+    loadQueries();
   </script>
 </body>
 </html>"""

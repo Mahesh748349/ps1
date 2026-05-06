@@ -21,8 +21,9 @@ def load_wav(path: Path, metadata: dict | None = None) -> AudioSignal:
             sample_rate = wav.getframerate()
             frame_count = wav.getnframes()
             raw = wav.readframes(frame_count)
-    except wave.Error as exc:
-        raise QueryValidationError(f"invalid wav file: {exc}") from exc
+    except (EOFError, OSError, wave.Error) as exc:
+        detail = str(exc) or "file is empty or corrupt"
+        raise QueryValidationError(f"invalid wav file: {detail}") from exc
 
     if sample_width not in {1, 2, 4}:
         raise QueryValidationError(f"unsupported sample width: {sample_width} bytes")

@@ -104,8 +104,9 @@ def wav_duration_seconds(path: Path) -> float:
             if frame_rate <= 0:
                 raise ValueError("invalid WAV sample rate")
             return frame_count / frame_rate
-    except wave.Error as exc:
-        raise ValueError(f"invalid WAV file: {exc}") from exc
+    except (EOFError, OSError, wave.Error) as exc:
+        detail = str(exc) or "file is empty or corrupt"
+        raise ValueError(f"invalid WAV file: {detail}") from exc
 
 
 def _read_catalog(path: Path) -> list[dict[str, str]]:
