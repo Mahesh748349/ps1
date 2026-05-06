@@ -2,7 +2,7 @@
 
 ## Team Information
 - **Team Name**: HackOrbit
-- **Year**: 2026
+- **Year**: 2nd year
 - **All-Female Team**: no
 
 ## Architecture Overview
